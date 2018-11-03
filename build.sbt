@@ -7,7 +7,12 @@ lazy val root = (project in file(".")).
       scalaVersion := "2.12.7",
       version := "0.1.0-SNAPSHOT",
       scalacOptions ++= Seq(
-        "-Ypartial-unification"
+        "-Xlint",
+        "-unchecked",
+        "-deprecation",
+        "-feature",
+        "-Ypartial-unification",
+        "-language:higherKinds"
       )
     )),
     name := "pi-vehicle-console-simple",

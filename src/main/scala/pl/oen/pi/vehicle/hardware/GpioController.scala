@@ -1,45 +1,47 @@
 package pl.oen.pi.vehicle.hardware
 
-import cats.effect.IO
+import cats.effect.Effect
 import cats.effect.concurrent.Ref
 import example.config.Gpio
+import cats.implicits._
 
-trait GpioController {
+abstract class GpioController[F[_] : Effect] {
+
   def conf: Gpio
 
-  def speedRef: Ref[IO, Int]
+  def speedRef: Ref[F, Int]
 
   val speedStep = 50
   val maxSpeed = 1024
   val minSpeed = 0
 
-  def speedUp: IO[Int] = setSpeed(_ + _)
+  def speedUp: F[Int] = setSpeed(_ + _)
 
-  def speedDown: IO[Int] = setSpeed(_ - _)
+  def speedDown: F[Int] = setSpeed(_ - _)
 
-  def rideForward(): IO[Unit] = for {
+  def rideForward(): F[Unit] = for {
     _ <- stop()
     _ <- simpleRideForward()
   } yield ()
 
-  def rideBackward(): IO[Unit] = for {
+  def rideBackward(): F[Unit] = for {
     _ <- stop()
     _ <- simpleRideBackward()
   } yield ()
 
-  def stop(): IO[Unit]
+  def stop(): F[Unit]
 
-  def shutdown(): IO[Unit]
+  def shutdown(): F[Unit]
 
-  def turnRight(): IO[Unit]
+  def turnRight(): F[Unit]
 
-  def turnLeft(): IO[Unit]
+  def turnLeft(): F[Unit]
 
-  protected[this] def simpleRideForward(): IO[Unit]
+  protected[this] def simpleRideForward(): F[Unit]
 
-  protected[this] def simpleRideBackward(): IO[Unit]
+  protected[this] def simpleRideBackward(): F[Unit]
 
-  protected[this] def setGpioSpeed(newSpeed: Int): IO[Unit]
+  protected[this] def setGpioSpeed(newSpeed: Int): F[Unit]
 
   protected[this] def adjustSpeed(v: Int): (Int, Int) = {
     val adjusted =
@@ -50,15 +52,15 @@ trait GpioController {
     (adjusted, adjusted)
   }
 
-  protected[this] def setSpeed(f: (Int, Int) => Int): IO[Int] = for {
+  protected[this] def setSpeed(f: (Int, Int) => Int): F[Int] = for {
       newSpeed <- speedRef.modify(v => adjustSpeed(f(v, speedStep)))
       _ <- setGpioSpeed(newSpeed)
     } yield newSpeed
 }
 
 object GpioController {
-  def apply(conf: Gpio): IO[GpioController] = for {
-      speedRef <- Ref.of[IO, Int](conf.startSpeed)
+  def apply[F[_] : Effect](conf: Gpio): F[GpioController[F]] = for {
+      speedRef <- Ref.of[F, Int](conf.startSpeed)
     } yield
       if (conf.isDummy) new DummyGpio(conf, speedRef)
       else new HwGpio(conf, speedRef)

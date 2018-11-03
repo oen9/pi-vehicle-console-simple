@@ -1,11 +1,11 @@
 package pl.oen.pi.vehicle.hardware
 
-import cats.effect.IO
+import cats.effect.Effect
 import cats.effect.concurrent.Ref
 import com.pi4j.io.gpio.{GpioFactory, PinState, RaspiPin}
 import example.config.Gpio
 
-class HwGpio(val conf: Gpio, val speedRef: Ref[IO, Int]) extends GpioController {
+class HwGpio[F[_] : Effect](val conf: Gpio, val speedRef: Ref[F, Int]) extends GpioController[F] {
 
   import HwGpio._
 
@@ -28,20 +28,20 @@ class HwGpio(val conf: Gpio, val speedRef: Ref[IO, Int]) extends GpioController 
     speedController
   )).foreach(p => p.setShutdownOptions(true, PinState.LOW))
 
-  override def stop(): IO[Unit] = IO {
+  override def stop(): F[Unit] = Effect[F].delay {
     motorForward.setState(PinState.LOW)
     motorBackward.setState(PinState.LOW)
   }
 
-  override def shutdown(): IO[Unit] = IO(gpio.shutdown())
+  override def shutdown(): F[Unit] = Effect[F].delay(gpio.shutdown())
 
-  override protected[this] def simpleRideForward(): IO[Unit] = IO(motorForward.setState(PinState.HIGH))
+  override protected[this] def simpleRideForward(): F[Unit] = Effect[F].delay(motorForward.setState(PinState.HIGH))
 
-  override protected[this] def simpleRideBackward(): IO[Unit] = IO(motorBackward.setState(PinState.HIGH))
+  override protected[this] def simpleRideBackward(): F[Unit] = Effect[F].delay(motorBackward.setState(PinState.HIGH))
 
-  override protected[this] def setGpioSpeed(newSpeed: Int): IO[Unit] = IO(speedController.setPwm(newSpeed))
+  override protected[this] def setGpioSpeed(newSpeed: Int): F[Unit] = Effect[F].delay(speedController.setPwm(newSpeed))
 
-  override def turnRight(): IO[Unit] = IO {
+  override def turnRight(): F[Unit] = Effect[F].delay {
     (0 until stepCount).foreach { _ =>
       smSequencesReversed.foreach { smSeq =>
         smSeq.zip(motorPins).foreach(v => v._2.setState(v._1))
@@ -50,7 +50,7 @@ class HwGpio(val conf: Gpio, val speedRef: Ref[IO, Int]) extends GpioController 
     }
   }
 
-  override def turnLeft(): IO[Unit] = IO {
+  override def turnLeft(): F[Unit] = Effect[F].delay {
     (0 until stepCount).foreach { _ =>
       smSequences.foreach { smSeq =>
         smSeq.zip(motorPins).foreach(v => v._2.setState(v._1))
