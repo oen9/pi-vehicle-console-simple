@@ -1,11 +1,11 @@
 package pl.oen.pi.vehicle.hardware
 
-import cats.effect.Effect
 import cats.effect.concurrent.Ref
+import cats.effect.{Effect, _}
 import example.config.Gpio
+import pl.oen.pi.vehicle.hardware.GpioController.State
 
-class DummyGpio[F[_]: Effect](val conf: Gpio, val speedRef: Ref[F, Int]) extends GpioController[F] {
-  override def stop(): F[Unit] = Effect[F].delay(println("motor stopped"))
+class DummyGpio[F[_] : Effect](val conf: Gpio, val stateRef: Ref[F, State], val turningCS: ContextShift[IO]) extends GpioController[F] {
 
   override def shutdown(): F[Unit] = Effect[F].delay(println("gpio.shutdown()"))
 
@@ -13,9 +13,17 @@ class DummyGpio[F[_]: Effect](val conf: Gpio, val speedRef: Ref[F, Int]) extends
 
   override def simpleRideBackward(): F[Unit] = Effect[F].delay(println("Brum brum backward!"))
 
+  override def simpleStop(): F[Unit] = Effect[F].delay(println("motor stopped"))
+
   override protected[this] def setGpioSpeed(newSpeed: Int): F[Unit] = Effect[F].unit
 
-  override def turnRight(): F[Unit] = Effect[F].delay(println("Turning right!"))
+  override def simpleTurnRight(): F[Unit] = Effect[F].delay({
+    println("Turning right!")
+    Thread.sleep(1000)
+  })
 
-  override def turnLeft(): F[Unit] = Effect[F].delay(println("Turning left!"))
+  override def simpleTurnLeft(): F[Unit] = Effect[F].delay({
+    println("Turning left!")
+    Thread.sleep(1000)
+  })
 }

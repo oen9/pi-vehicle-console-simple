@@ -1,11 +1,12 @@
 package pl.oen.pi.vehicle.hardware
 
-import cats.effect.Effect
+import cats.effect.{ContextShift, Effect, IO}
 import cats.effect.concurrent.Ref
 import com.pi4j.io.gpio.{GpioFactory, PinState, RaspiPin}
 import example.config.Gpio
+import pl.oen.pi.vehicle.hardware.GpioController.State
 
-class HwGpio[F[_] : Effect](val conf: Gpio, val speedRef: Ref[F, Int]) extends GpioController[F] {
+class HwGpio[F[_] : Effect](val conf: Gpio, val stateRef: Ref[F, State], val turningCS: ContextShift[IO]) extends GpioController[F] {
 
   import HwGpio._
 
@@ -28,7 +29,7 @@ class HwGpio[F[_] : Effect](val conf: Gpio, val speedRef: Ref[F, Int]) extends G
     speedController
   )).foreach(p => p.setShutdownOptions(true, PinState.LOW))
 
-  override def stop(): F[Unit] = Effect[F].delay {
+  override def simpleStop(): F[Unit] = Effect[F].delay {
     motorForward.setState(PinState.LOW)
     motorBackward.setState(PinState.LOW)
   }
@@ -41,7 +42,7 @@ class HwGpio[F[_] : Effect](val conf: Gpio, val speedRef: Ref[F, Int]) extends G
 
   override protected[this] def setGpioSpeed(newSpeed: Int): F[Unit] = Effect[F].delay(speedController.setPwm(newSpeed))
 
-  override def turnRight(): F[Unit] = Effect[F].delay {
+  override def simpleTurnRight(): F[Unit] = Effect[F].delay {
     (0 until stepCount).foreach { _ =>
       smSequencesReversed.foreach { smSeq =>
         smSeq.zip(motorPins).foreach(v => v._2.setState(v._1))
@@ -50,7 +51,7 @@ class HwGpio[F[_] : Effect](val conf: Gpio, val speedRef: Ref[F, Int]) extends G
     }
   }
 
-  override def turnLeft(): F[Unit] = Effect[F].delay {
+  override def simpleTurnLeft(): F[Unit] = Effect[F].delay {
     (0 until stepCount).foreach { _ =>
       smSequences.foreach { smSeq =>
         smSeq.zip(motorPins).foreach(v => v._2.setState(v._1))
