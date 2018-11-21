@@ -7,7 +7,7 @@ import pl.oen.pi.vehicle.hardware.GpioController.State
 
 class DummyGpio[F[_] : Effect](val conf: Gpio, val stateRef: Ref[F, State], val turningCS: ContextShift[IO]) extends GpioController[F] {
 
-  override def shutdown(): F[Unit] = Effect[F].delay(println("gpio.shutdown()"))
+  override def simpleShutdown(): F[Unit] = Effect[F].delay(println("gpio.shutdown()"))
 
   override def simpleRideForward(): F[Unit] = Effect[F].delay(println("Brum brum forward!"))
 

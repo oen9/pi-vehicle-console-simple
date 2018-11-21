@@ -34,7 +34,7 @@ class HwGpio[F[_] : Effect](val conf: Gpio, val stateRef: Ref[F, State], val tur
     motorBackward.setState(PinState.LOW)
   }
 
-  override def shutdown(): F[Unit] = Effect[F].delay(gpio.shutdown())
+  override protected[this] def simpleShutdown(): F[Unit] = Effect[F].delay(gpio.shutdown())
 
   override protected[this] def simpleRideForward(): F[Unit] = Effect[F].delay(motorForward.setState(PinState.HIGH))
 

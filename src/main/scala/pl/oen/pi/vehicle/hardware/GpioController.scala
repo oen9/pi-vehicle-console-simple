@@ -37,7 +37,10 @@ abstract class GpioController[F[_] : Effect] {
     _ <- simpleStop()
   } yield ()
 
-  def shutdown(): F[Unit]
+  def shutdown(): F[Unit] = for {
+    _ <- stop()
+    _ <- simpleShutdown()
+  } yield()
 
   def turnRight(): F[Unit] = for {
     _ <- stateRef.update(s => s.copy(turningStatus = TurningRight))
@@ -48,6 +51,8 @@ abstract class GpioController[F[_] : Effect] {
     _ <- stateRef.update(s => s.copy(turningStatus = TurningLeft))
     _ <- scheduleTurningInAsync(TurningLeft, simpleTurnLeft())
   } yield ()
+
+  protected[this] def simpleShutdown(): F[Unit]
 
   protected[this] def simpleTurnRight(): F[Unit]
 
